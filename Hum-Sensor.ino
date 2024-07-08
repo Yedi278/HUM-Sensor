@@ -1,8 +1,9 @@
 #define DEBUG_LIGHT_PIN 7
 
-#include "RTC_Timer.h"
 #include "Blinker.h"
+#include "RTC_Timer.h"
 #include "SD_writer.h"
+#include "DTH_Sensor.h"
 #include <String.h>
 
 
@@ -11,15 +12,18 @@
 DS3231 rtc;
 File dataFile;
 
+float humidity, temp_DHT;
 char input_buff = -1;
 bool h12Flag, pmFlag, centuryFlag;
-unsigned int seconds, minutes, hours, day, month, year, temp;
+unsigned int seconds, minutes, hours, day, month, year, temp_RTC;
 String input_str = "";
 
 void setup(){
   
   Wire.begin();
   Serial.begin(9600);
+
+  DHT sensor(DHTPIN, DHTTYPE);
 
   pinMode(DEBUG_LIGHT_PIN, OUTPUT);
   pinMode(CHIPSELECT, OUTPUT);
@@ -38,12 +42,15 @@ void setup(){
 
 void loop(){
 
+  humidity = sensor.readHumidity();
+  temp_DHT = sensor.readTemperature();
+
   //get time variables data from rtc module
   get_Time(seconds, minutes, hours, day, month, year, rtc, h12Flag, pmFlag, centuryFlag);
   
   //if(Serial) Serial.println(String(day) +"/"+ String(month) +"/"+ String(year)+ '-' + String(hours,DEC) +":"+ String(minutes, DEC) +":"+ String(seconds, DEC) +" - "+String(temp,DEC)+"°C");
 
-  //read written data in serial port if
+  //read input from serial port
   while(Serial.available()){
     input_buff = Serial.read();
     input_str += input_buff;
@@ -70,6 +77,9 @@ void loop(){
     }
     input_str = "";
   }
+  
+  Serial.print(String(day) +"/"+ String(month) +"/"+ String(year)+ '-' + String(hours,DEC) +":"+ String(minutes, DEC) +":"+ String(seconds, DEC) +" - "+String(temp_RTC,DEC)+"°C ");
+  Serial.println(String(humidity) + "% " + String(temp_DHT) + "°C");
   
   delay(1000);
 }
