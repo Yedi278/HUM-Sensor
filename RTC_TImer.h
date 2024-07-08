@@ -4,7 +4,7 @@
 #include <DS3231.h>
 #include <Wire.h>
 
-void get_Time(unsigned int& seconds,unsigned int& minutes,unsigned int& hours,unsigned int& day,unsigned int& month,unsigned int& year, DS3231 rtc_obj, bool& h12Flag, bool& pmFlag, bool& centuryFlag){
+void get_Time(unsigned int& seconds,unsigned int& minutes,unsigned int& hours,unsigned int& day,unsigned int& month,unsigned int& year, unsigned int& temp, DS3231 rtc_obj, bool& h12Flag, bool& pmFlag, bool& centuryFlag){
   
     seconds = rtc_obj.getSecond();
     minutes = rtc_obj.getMinute();
@@ -12,6 +12,7 @@ void get_Time(unsigned int& seconds,unsigned int& minutes,unsigned int& hours,un
     day     = rtc_obj.getDate();
     month   = rtc_obj.getMonth(centuryFlag);
     year    = rtc_obj.getYear();
+    temp    = rtc_obj.getTemperature();
 }
 
 void set_Time(unsigned int seconds,unsigned int minutes,unsigned int hours,unsigned int day,unsigned int month,unsigned int year, DS3231 rtc){

@@ -6,11 +6,11 @@
 #include "DTH_Sensor.h"
 #include <String.h>
 
-
 // 08.07.2024.16.36.00
 
 DS3231 rtc;
 File dataFile;
+DHT sensor(DHTPIN, DHTTYPE);
 
 float humidity, temp_DHT;
 char input_buff = -1;
@@ -20,14 +20,14 @@ String input_str = "";
 
 void setup(){
   
-  Wire.begin();
-  Serial.begin(9600);
-
-  DHT sensor(DHTPIN, DHTTYPE);
-
   pinMode(DEBUG_LIGHT_PIN, OUTPUT);
   pinMode(CHIPSELECT, OUTPUT);
+  pinMode(DHTPIN, INPUT);
 
+  Wire.begin();
+  Serial.begin(9600);
+  sensor.begin();
+  
   if(SD.begin(CHIPSELECT)){
     Serial.println("SD Card Correctly initialised!");
   }else{
@@ -36,8 +36,6 @@ void setup(){
   }
 
   init_SD(dataFile);
-
-  print_File(dataFile);
 }
 
 void loop(){
@@ -46,9 +44,7 @@ void loop(){
   temp_DHT = sensor.readTemperature();
 
   //get time variables data from rtc module
-  get_Time(seconds, minutes, hours, day, month, year, rtc, h12Flag, pmFlag, centuryFlag);
-  
-  //if(Serial) Serial.println(String(day) +"/"+ String(month) +"/"+ String(year)+ '-' + String(hours,DEC) +":"+ String(minutes, DEC) +":"+ String(seconds, DEC) +" - "+String(temp,DEC)+"°C");
+  get_Time(seconds, minutes, hours, day, month, year, temp_RTC, rtc, h12Flag, pmFlag, centuryFlag);
 
   //read input from serial port
   while(Serial.available()){
@@ -56,13 +52,18 @@ void loop(){
     input_str += input_buff;
   }
   if(input_str.length()){
-    
-    if(input_str.length() != 19){
-      Serial.println("Error input time, enter as DD:MM:YYYY.hh:mm:ss");
-      Serial.println("Entered string -> " + input_str);
-      input_str = "";
+
+    if(input_str == "clear"){
       
-    }else{
+      SD.remove(FILE_NAME);
+      input_buff = "";
+      Serial.println("Cleared File");
+    
+    }else if(input_str == "print"){
+
+      print_File(dataFile);
+      
+    }else if(input_str.length() == 19){
       
       day = input_str.substring(0,2).toInt();
       month = input_str.substring(3,5).toInt();
@@ -74,12 +75,19 @@ void loop(){
       //set rtc module time to input
       set_Time(seconds, minutes, hours, day, month, year, rtc);
       
+    }else{
+      Serial.println("Error input time, enter as DD:MM:YYYY.hh:mm:ss");
+      Serial.println("Entered string -> " + input_str);
+      input_str = "";
+      
     }
     input_str = "";
   }
   
-  Serial.print(String(day) +"/"+ String(month) +"/"+ String(year)+ '-' + String(hours,DEC) +":"+ String(minutes, DEC) +":"+ String(seconds, DEC) +" - "+String(temp_RTC,DEC)+"°C ");
+  Serial.print(String(day) +"/"+ String(month) +"/"+ String(year)+ '-' + String(hours,DEC) +":"+ String(minutes, DEC) +":"+ String(seconds, DEC) +" - "+String(temp_RTC)+"°C ");
   Serial.println(String(humidity) + "% " + String(temp_DHT) + "°C");
   
-  delay(1000);
+  write_File(dataFile,day,month,year,hours,minutes,seconds,humidity,temp_DHT,temp_RTC);
+  
+  delay(2000);
 }
